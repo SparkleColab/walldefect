@@ -24,7 +24,7 @@ except KeyError:
 
 # Configure the Generative AI SDK
 try:
-    client = genai.Client(api_key=GOOGLE_API_KEY)
+    client = genai.Client(api_key="AIzaSyAV60kxvHGel5ok_LwFLEOB05GaoHin1s8")
 except Exception as e:
     st.error(f"Error configuring Google AI SDK: {e}")
     st.stop()
