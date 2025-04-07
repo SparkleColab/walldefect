@@ -22,6 +22,7 @@ except KeyError:
     st.info("Please add your Google API Key to the environment secrets configuration.")
     st.stop() # Stop execution if the key isn't found
 
+st.write(Google_API_KEY)
 # Configure the Generative AI SDK
 try:
     client = genai.Client(api_key=Google_API_KEY)
