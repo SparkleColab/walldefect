@@ -1,5 +1,5 @@
 import streamlit as st
-from google-genai import genai
+from googl import genai
 from PIL import Image
 import io
 import os
