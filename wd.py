@@ -68,8 +68,10 @@ if uploaded_file is not None:
 
         try:
             # Generate content
-            response = client.model.generate_content(model = MODEL_NAME, contents = [image, """Describe all visible defects on the wall, identify any root causes
-            and recomment any suggested remedies"""])
+             response = client.models.generate_content(model=Model_Name, contents=[
+                pil_image,
+                "Please describe the surface defects visible on the wall, root causes and suggested remedies"
+            ]
             gemini_response_received = True # Set flag as we got a response object
 
         # --- Confirmation ---
