@@ -7,7 +7,7 @@ import os
 # --- Configuration ---
 # Set page configuration (optional but good practice)
 st.set_page_config(
-    page_title="Gemini Image Analyzer",
+    page_title="VauntCo Image Analyzer",
     page_icon="✨",
     layout="centered",
 )
