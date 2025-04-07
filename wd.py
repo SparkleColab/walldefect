@@ -21,7 +21,7 @@ with st.sidebar:
         image = Image.open(uploaded_file)  
         st.image(image, caption='Uploaded Image') 
 
-if image:
+if uploaded_file:
     # Choose a model that supports vision input
     # Examples: 'gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-pro-vision' (older)
     Model_Name = "gemini-1.5-flash-latest" # Or another vision model
@@ -41,12 +41,12 @@ if image:
         response = client.models.generate_content(
             model=Model_Name,
             contents=[
-                image,
+                uploaded_file,
                 "Please describe the surface defects visible on the wall, identify root causes and suggest possible corrections"
             ]
         )
 
-        st.display(image)
+        st.display(uploaded_file)
         st.Markdown(response.text)
 
         # Print the response
