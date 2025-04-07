@@ -29,96 +29,90 @@ except Exception as e:
     st.error(f"Error configuring Google AI SDK: {e}")
     st.stop()
 
-# --- Model Initialization ---
-# Initialize the Gemini Pro Vision model
+
+# --- Model Selection ---
+# Use the Gemini 1.5 Pro model (which handles images)
+# Or use 'gemini-1.5-flash-latest' for potentially faster responses
+MODEL_NAME = "gemini-1.5-pro-latest"
 try:
-    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+    model = genai.GenerativeModel(MODEL_NAME)
 except Exception as e:
-    st.error(f"Error initializing Gemini model: {e}")
-    st.info("Check your API key and network connection.")
+    st.error(f"Error creating Gemini model instance: {e}")
     st.stop()
 
-# --- Helper Function ---
-def get_gemini_response(image: Image.Image, prompt: str):
-    """
-    Sends the image and prompt to Gemini Pro Vision and returns the response.
+# --- Streamlit App UI ---
+st.set_page_config(page_title="Image Analyzer with Gemini", layout="wide")
+st.title("🖼️ Image Analyzer for Wall Defects")
+st.write("Upload an image to identify wall defects. ")
 
-    Args:
-        image (PIL.Image.Image): The image to analyze.
-        prompt (str): The text prompt to accompany the image.
-
-    Returns:
-        str: The text response from Gemini, or an error message.
-    """
-    if image is None:
-        return "Error: No image provided."
-
-    try:
-        # Prepare the content payload
-        # The API expects a list containing the prompt and the image
-        content = [prompt, image]
-
-        # Generate content
-        response = model.generate_content(content, stream=False) # Use stream=False for simpler handling
-
-        # Handle potential safety blocks or empty responses
-        if not response.parts:
-             # Check prompt feedback for blocking reasons
-            try:
-                feedback = response.prompt_feedback
-                block_reason = feedback.block_reason.name if feedback.block_reason else "Unknown"
-                return f"❌ Response blocked. Reason: {block_reason}"
-            except (ValueError, AttributeError):
-                 return "❌ Response was empty or blocked for an unknown reason."
-
-        return response.text
-
-    except Exception as e:
-        return f"An error occurred: {e}"
-
-# --- Streamlit UI ---
-st.title("✨ Gemini Image Analyzer")
-st.write("Upload an image and ask Gemini about it!")
-
-# User prompt input
-user_prompt = st.text_input("What do you want to ask about the image?", "Describe this image in detail.")
-
-# Image uploader
+# --- Image Upload ---
 uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
 
-image_to_display = None
-image_for_gemini = None
-
+# --- Processing and Display ---
 if uploaded_file is not None:
-    # Read the file content into bytes
-    image_bytes = uploaded_file.getvalue()
-
     try:
-        # Open the image using PIL
-        image_for_gemini = Image.open(io.BytesIO(image_bytes))
+        # Read the uploaded image file
+        image_bytes = uploaded_file.getvalue()
+        image = Image.open(io.BytesIO(image_bytes))
+
         # Display the uploaded image
-        st.image(image_for_gemini, caption='Uploaded Image.', use_column_width=True)
-        image_to_display = True # Flag that image is ready
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
+        st.write("") # Add some space
+
+        # Prepare the prompt for Gemini (Image + Text)
+        # You can customize the text prompt
+        prompt_parts = [
+            "Describe visible defects on the wall, identify any root causes and recommend any suggested remedies",
+            image, # Send the PIL Image object directly
+        ]
+
+        # --- Call Gemini API ---
+        st.write(f"Sending image to Gemini ({MODEL_NAME})...")
+        response = None # Initialize response variable
+        gemini_response_received = False # Flag to track if we got *any* response object
+
+        try:
+            # Generate content
+            response = model.generate_content(prompt_parts)
+            gemini_response_received = True # Set flag as we got a response object
+
+        # --- Confirmation ---
+        # *Crucially*, print confirmation immediately after the call returns,
+        # regardless of whether response.text access works later.
+        finally:
+            if gemini_response_received:
+                st.success("✅ Confirmation: Received a response object from Gemini.")
+            else:
+                # This part might not be reached if generate_content raises an error before returning
+                st.warning("⚠️ Confirmation: Did not receive a response object from Gemini (API call might have failed).")
+
+        # --- Display Gemini Response ---
+        if response and gemini_response_received:
+            try:
+                st.write("---")
+                st.subheader("Gemini's Response:")
+                # Accessing response.text can sometimes fail if the response was blocked etc.
+                st.markdown(response.text)
+            except Exception as e:
+                st.error(f"Error accessing or displaying the text from Gemini's response: {e}")
+                st.info("Even though displaying failed, a response object *was* received.")
+                st.write("Raw Response Object (for debugging):")
+                st.json(str(response)) # Show the raw response structure if text access fails
+        elif gemini_response_received:
+             st.warning("Received a response object from Gemini, but it appears empty or unusable.")
+             st.write("Raw Response Object (for debugging):")
+             st.json(str(response)) # Show the raw response structure
+
+    except genai.types.BlockedPromptException as bpe:
+        st.error("❌ Gemini API Error: The request was blocked. This might be due to safety settings or harmful content.")
+        st.error(f"Details: {bpe}")
     except Exception as e:
-        st.error(f"Error loading image: {e}")
-        uploaded_file = None # Reset uploader if image is invalid
+        st.error(f"An unexpected error occurred during processing: {e}")
+else:
+    st.info("Please upload an image file to analyze.")
 
-# Analyze button
-if image_to_display: # Only show button if image is successfully loaded
-    if st.button("Analyze Image"):
-        if image_for_gemini and user_prompt:
-            with st.spinner("Gemini is thinking... 🤔"):
-                response_text = get_gemini_response(image_for_gemini, user_prompt)
-            st.subheader("Gemini's Response:")
-            st.markdown(response_text) # Use markdown for better formatting
-        elif not user_prompt:
-            st.warning("Please enter a prompt.")
-        else:
-            st.warning("Please upload a valid image first.")
 
-st.sidebar.markdown("---")
-st.sidebar.header("About")
-st.sidebar.info(
-    "This app uses the Google Gemini Pro Vision model "
-    "via the Google Generative AI SDK to analyze uploaded images based on your prompt."
-)
+
+
+
+
