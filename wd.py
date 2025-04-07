@@ -16,7 +16,7 @@ st.set_page_config(
 # Preferred method: Use Streamlit secrets
 try:
     # Attempt to get the API key from Streamlit secrets
-    api_key = os.getenv("GOOGLE_API_KEY")
+   GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
 except KeyError:
     st.error("Error: GOOGLE_API_KEY not found in environment secrets.")
     st.info("Please add your Google API Key to the environment secrets configuration.")
@@ -24,7 +24,7 @@ except KeyError:
 
 # Configure the Generative AI SDK
 try:
-    genai.configure(api_key=api_key)
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 except Exception as e:
     st.error(f"Error configuring Google AI SDK: {e}")
     st.stop()
@@ -34,11 +34,6 @@ except Exception as e:
 # Use the Gemini 1.5 Pro model (which handles images)
 # Or use 'gemini-1.5-flash-latest' for potentially faster responses
 MODEL_NAME = "gemini-1.5-pro-latest"
-try:
-    model = genai.GenerativeModel(MODEL_NAME)
-except Exception as e:
-    st.error(f"Error creating Gemini model instance: {e}")
-    st.stop()
 
 # --- Streamlit App UI ---
 #st.set_page_config(page_title="Image Analyzer with Gemini", layout="wide")
@@ -73,7 +68,8 @@ if uploaded_file is not None:
 
         try:
             # Generate content
-            response = model.generate_content(prompt_parts)
+            response = client.model.generate_content(model = MODEL_NAME, contents = [image, """Describe all visible defects on the wall, identify any root causes
+            and recomment any suggested remedies"""])
             gemini_response_received = True # Set flag as we got a response object
 
         # --- Confirmation ---
