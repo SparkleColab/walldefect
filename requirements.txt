@@ -4,4 +4,5 @@ google-generativeai
 streamlit
 pillow
 python-dotenv
-Markdown
+from IPython.display import display, Markdown
+IPython.display
