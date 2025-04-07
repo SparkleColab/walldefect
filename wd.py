@@ -16,7 +16,7 @@ st.set_page_config(
 # Preferred method: Use Streamlit secrets
 try:
     # Attempt to get the API key from Streamlit secrets
-   GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+   GOOGLE_API_KEY = os.getenv("Google_API_KEY")
 except KeyError:
     st.error("Error: GOOGLE_API_KEY not found in environment secrets.")
     st.info("Please add your Google API Key to the environment secrets configuration.")
@@ -24,7 +24,7 @@ except KeyError:
 
 # Configure the Generative AI SDK
 try:
-    client = genai.Client(api_key="AIzaSyAV60kxvHGel5ok_LwFLEOB05GaoHin1s8")
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 except Exception as e:
     st.error(f"Error configuring Google AI SDK: {e}")
     st.stop()
