@@ -31,12 +31,12 @@ except Exception as e:
 
 
 # --- Model Selection ---
-# Use the Gemini 1.5 Pro model (which handles images)
+# Use the VauntAI 1.5 Pro model (which handles images)
 # Or use 'gemini-1.5-flash-latest' for potentially faster responses
 MODEL_NAME = "gemini-1.5-flash-latest"
 
 # --- Streamlit App UI ---
-#st.set_page_config(page_title="Image Analyzer with Gemini", layout="wide")
+#st.set_page_config(page_title="Image Analyzer with VauntAI", layout="wide")
 st.title("🖼️ Image Analyzer for Wall Defects")
 st.write("Upload an image to identify wall defects. ")
 
@@ -54,15 +54,15 @@ if uploaded_file is not None:
         st.image(image, caption='Uploaded Image.', use_column_width=True)
         st.write("") # Add some space
 
-        # Prepare the prompt for Gemini (Image + Text)
+        # Prepare the prompt for VauntAI (Image + Text)
         # You can customize the text prompt
         prompt_parts = [
             "Describe visible defects on the wall, identify any root causes and recommend any suggested remedies",
             image, # Send the PIL Image object directly
         ]
 
-        # --- Call Gemini API ---
-        st.write(f"Sending image to Gemini ({MODEL_NAME})...")
+        # --- Call VauntAI API ---
+        st.write(f"Sending image to VauntAI ({MODEL_NAME})...")
         response = None # Initialize response variable
         gemini_response_received = False # Flag to track if we got *any* response object
 
@@ -76,30 +76,30 @@ if uploaded_file is not None:
         # regardless of whether response.text access works later.
         finally:
             if gemini_response_received:
-                st.success("✅ Confirmation: Received a response object from Gemini.")
+                st.success("✅ Confirmation: Received a response object from VauntAI.")
             else:
                 # This part might not be reached if generate_content raises an error before returning
-                st.warning("⚠️ Confirmation: Did not receive a response object from Gemini (API call might have failed).")
+                st.warning("⚠️ Confirmation: Did not receive a response object from VauntAI (API call might have failed).")
 
-        # --- Display Gemini Response ---
+        # --- Display VauntAI Response ---
         if response and gemini_response_received:
             try:
                 st.write("---")
-                st.subheader("Gemini's Response:")
+                st.subheader("VauntAI's Response:")
                 # Accessing response.text can sometimes fail if the response was blocked etc.
                 st.markdown(response.text)
             except Exception as e:
-                st.error(f"Error accessing or displaying the text from Gemini's response: {e}")
+                st.error(f"Error accessing or displaying the text from VauntAI's response: {e}")
                 st.info("Even though displaying failed, a response object *was* received.")
                 st.write("Raw Response Object (for debugging):")
                 st.json(str(response)) # Show the raw response structure if text access fails
         elif gemini_response_received:
-             st.warning("Received a response object from Gemini, but it appears empty or unusable.")
+             st.warning("Received a response object from VauntAI, but it appears empty or unusable.")
              st.write("Raw Response Object (for debugging):")
              st.json(str(response)) # Show the raw response structure
 
     except genai.types.BlockedPromptException as bpe:
-        st.error("❌ Gemini API Error: The request was blocked. This might be due to safety settings or harmful content.")
+        st.error("❌ VauntAI API Error: The request was blocked. This might be due to safety settings or harmful content.")
         st.error(f"Details: {bpe}")
     except Exception as e:
         st.error(f"An unexpected error occurred during processing: {e}")
