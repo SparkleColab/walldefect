@@ -41,7 +41,7 @@ except Exception as e:
     st.stop()
 
 # --- Streamlit App UI ---
-st.set_page_config(page_title="Image Analyzer with Gemini", layout="wide")
+#st.set_page_config(page_title="Image Analyzer with Gemini", layout="wide")
 st.title("🖼️ Image Analyzer for Wall Defects")
 st.write("Upload an image to identify wall defects. ")
 
