@@ -3,7 +3,7 @@ from PIL import Image
 import streamlit as st  
 import os  
 import requests
-from IPython.display import display, Markdown
+#from IPython.display import display, Markdown
 
 # Set the initial configuration for the Streamlit app
 st.set_page_config(page_title="Wall Defect App", initial_sidebar_state="expanded", layout="wide") 
