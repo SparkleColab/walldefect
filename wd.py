@@ -1,63 +1,124 @@
-import google.generativeai as genai  
-from PIL import Image  
-import streamlit as st  
-import os  
-import requests
-#from IPython.display import display, Markdown
+import streamlit as st
+import google.generativeai as genai
+from PIL import Image
+import io
+import os
 
-# Set the initial configuration for the Streamlit app
-st.set_page_config(page_title="Wall Defect App", initial_sidebar_state="expanded", layout="wide") 
-st.title("Wall Defect Detection") 
+# --- Configuration ---
+# Set page configuration (optional but good practice)
+st.set_page_config(
+    page_title="Gemini Image Analyzer",
+    page_icon="✨",
+    layout="centered",
+)
 
-# Fetch the Google API key from environment variables
-google_genai_key = os.getenv("GOOGLE_API_KEY")
+# --- API Key Handling ---
+# Preferred method: Use Streamlit secrets
+try:
+    # Attempt to get the API key from Streamlit secrets
+    api_key = os.getenv("GOOGLE_API_KEY")
+except KeyError:
+    st.error("Error: GOOGLE_API_KEY not found in environment secrets.")
+    st.info("Please add your Google API Key to the environment secrets configuration.")
+    st.stop() # Stop execution if the key isn't found
 
+# Configure the Generative AI SDK
+try:
+    genai.configure(api_key=api_key)
+except Exception as e:
+    st.error(f"Error configuring Google AI SDK: {e}")
+    st.stop()
 
+# --- Model Initialization ---
+# Initialize the Gemini Pro Vision model
+try:
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
+except Exception as e:
+    st.error(f"Error initializing Gemini model: {e}")
+    st.info("Check your API key and network connection.")
+    st.stop()
 
-with st.sidebar:
-    st.title("Select an image")  # Sidebar title
-    uploaded_file = st.file_uploader("Upload an image...", type=["jpg", "jpeg", "png"])  
-    if uploaded_file:
-        image = Image.open(uploaded_file)  
-        st.image(image, caption='Uploaded Image') 
+# --- Helper Function ---
+def get_gemini_response(image: Image.Image, prompt: str):
+    """
+    Sends the image and prompt to Gemini Pro Vision and returns the response.
 
-if uploaded_file:
-    # Choose a model that supports vision input
-    # Examples: 'gemini-1.5-flash-latest', 'gemini-1.5-pro-latest', 'gemini-pro-vision' (older)
-    Model_Name = "gemini-1.5-flash-latest" # Or another vision model
-    # Define your text prompt
-    #prompt_text = "Describe this image in detail."#@param: {type: "string"}
-    '''
-    # Combine the text prompt and the PIL image object in a list
-    prompt_parts = [
-        prompt_text,
-        image, # Pass the PIL Image object directly
-    ]
-    '''
-    print("\nSending prompt to Gemini...")
+    Args:
+        image (PIL.Image.Image): The image to analyze.
+        prompt (str): The text prompt to accompany the image.
+
+    Returns:
+        str: The text response from Gemini, or an error message.
+    """
+    if image is None:
+        return "Error: No image provided."
+
     try:
+        # Prepare the content payload
+        # The API expects a list containing the prompt and the image
+        content = [prompt, image]
+
         # Generate content
-        
-        response = client.models.generate_content(
-            model=Model_Name,
-            contents=[
-                uploaded_file,
-                "Please describe the surface defects visible on the wall, identify root causes and suggest possible corrections"
-            ]
-        )
+        response = model.generate_content(content, stream=False) # Use stream=False for simpler handling
 
-        st.display(uploaded_file)
-        st.Markdown(response.text)
+        # Handle potential safety blocks or empty responses
+        if not response.parts:
+             # Check prompt feedback for blocking reasons
+            try:
+                feedback = response.prompt_feedback
+                block_reason = feedback.block_reason.name if feedback.block_reason else "Unknown"
+                return f"❌ Response blocked. Reason: {block_reason}"
+            except (ValueError, AttributeError):
+                 return "❌ Response was empty or blocked for an unknown reason."
 
-        # Print the response
-        print("\n--- Gemini Response ---")
-        print(response.text)
-        print("-----------------------")
+        return response.text
 
     except Exception as e:
-        print(f"\nAn error occurred calling the Gemini API: {e}")
-        # You might want to inspect response.prompt_feedback here too for safety ratings etc.
-        # try:
-        #    print(response.prompt_feedback)
-        # except:
-        #    pass
+        return f"An error occurred: {e}"
+
+# --- Streamlit UI ---
+st.title("✨ Gemini Image Analyzer")
+st.write("Upload an image and ask Gemini about it!")
+
+# User prompt input
+user_prompt = st.text_input("What do you want to ask about the image?", "Describe this image in detail.")
+
+# Image uploader
+uploaded_file = st.file_uploader("Choose an image...", type=["jpg", "jpeg", "png"])
+
+image_to_display = None
+image_for_gemini = None
+
+if uploaded_file is not None:
+    # Read the file content into bytes
+    image_bytes = uploaded_file.getvalue()
+
+    try:
+        # Open the image using PIL
+        image_for_gemini = Image.open(io.BytesIO(image_bytes))
+        # Display the uploaded image
+        st.image(image_for_gemini, caption='Uploaded Image.', use_column_width=True)
+        image_to_display = True # Flag that image is ready
+    except Exception as e:
+        st.error(f"Error loading image: {e}")
+        uploaded_file = None # Reset uploader if image is invalid
+
+# Analyze button
+if image_to_display: # Only show button if image is successfully loaded
+    if st.button("Analyze Image"):
+        if image_for_gemini and user_prompt:
+            with st.spinner("Gemini is thinking... 🤔"):
+                response_text = get_gemini_response(image_for_gemini, user_prompt)
+            st.subheader("Gemini's Response:")
+            st.markdown(response_text) # Use markdown for better formatting
+        elif not user_prompt:
+            st.warning("Please enter a prompt.")
+        else:
+            st.warning("Please upload a valid image first.")
+
+st.sidebar.markdown("---")
+st.sidebar.header("About")
+st.sidebar.info(
+    "This app uses the Google Gemini Pro Vision model "
+    "via the Google Generative AI SDK to analyze uploaded images based on your prompt."
+)
