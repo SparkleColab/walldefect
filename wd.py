@@ -46,8 +46,8 @@ if image:
             ]
         )
 
-        display(image)
-        Markdown(response.text)
+        st.display(image)
+        st.Markdown(response.text)
 
         # Print the response
         print("\n--- Gemini Response ---")
