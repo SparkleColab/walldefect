@@ -33,7 +33,7 @@ except Exception as e:
 # --- Model Selection ---
 # Use the Gemini 1.5 Pro model (which handles images)
 # Or use 'gemini-1.5-flash-latest' for potentially faster responses
-MODEL_NAME = "gemini-1.5-pro-latest"
+MODEL_NAME = "gemini-1.5-flash-latest"
 
 # --- Streamlit App UI ---
 #st.set_page_config(page_title="Image Analyzer with Gemini", layout="wide")
